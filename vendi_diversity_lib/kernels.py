@@ -12,6 +12,7 @@ import KDTW
 from frechetdist import frdist
 
 import torch
+import sigkernel
 
 
 class RandomFourierSignatureFeaturesKernel:
@@ -134,10 +135,27 @@ class SignatureKernelTorch:
           Computes the normalized Gram matrix for X.
     """
 
-    def __init__(self, sig_kernel, max_batch=100, device=None):
-        self.sig_kernel = sig_kernel
-        self.max_batch = max_batch
-        self.bandwidth = 1.0
+    def __init__(self, sig_kernel=None, bandwidth=None, max_batch=None, dyadic_order=None, device=None):
+        if bandwidth is None:
+            self.bandwidth = 1.0
+        else:
+            self.bandwidth = bandwidth
+
+        if dyadic_order is None:
+            self.dyadic_order = 1
+        else:
+            self.dyadic_order = dyadic_order
+
+        if sig_kernel is None:
+            self.sig_kernel = sigkernel.SigKernel(static_kernel=sigkernel.RBFKernel(sigma=self.bandwidth), dyadic_order=self.dyadic_order)
+        else:
+            self.sig_kernel = sig_kernel
+
+        if max_batch is None:
+            self.max_batch = 10
+        else:
+            self.max_batch = max_batch
+
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
@@ -520,6 +538,7 @@ class KernelMatrix:
         sig_kernel=None,
         max_batch=None,
         device=None,
+        dyadic_order=None,
         static_kernel=None,
         bandwidth=None,
         n_levels=None,
@@ -540,8 +559,8 @@ class KernelMatrix:
 
         # Select and instantiate the appropriate kernel based on the exact string.
         if kernel_type == 'Signature kernel torch':
-            # SignatureKernelTorch expects (sig_kernel, max_batch, device)
-            self.kernel = SignatureKernelTorch(sig_kernel, max_batch, device)
+            # SignatureKernelTorch expects (sig_kernel, bandwidth, max_batch, dyadic_order, device)
+            self.kernel = SignatureKernelTorch(sig_kernel, bandwidth, max_batch, dyadic_order, device)
 
         elif kernel_type == 'Signature kernel cupy':
             # SignatureKernelCupy expects (static_kernel, bandwidth, sig_kernel)
@@ -549,7 +568,7 @@ class KernelMatrix:
 
         elif kernel_type == 'Signature kernel':
             # Alias for the Torch implementation
-            self.kernel = SignatureKernelTorch(sig_kernel, max_batch, device)
+            self.kernel = SignatureKernelTorch(sig_kernel, bandwidth, max_batch, dyadic_order, device)
 
         elif kernel_type == 'Random fourier signature features kernel':
             # RandomFourierSignatureFeaturesKernel expects (bandwidth, n_levels, n_components, method)
@@ -574,26 +593,32 @@ class KernelMatrix:
 
     def __call__(self, X, Y=None, diag=False):
         """
-        Evaluate the chosen kernel on input sequences.
+        Evaluate the chosen kernel on input sequences, converting inputs to CuPy arrays
+        and returning the result as a NumPy array.
 
         Parameters
         ----------
         X : array-like
-            First batch of sequences (e.g., shape (n_samples_X, T, d))
+            First batch of sequences (e.g., NumPy array or any array-like).
         Y : array-like or None, default=None
             Second batch of sequences. If None, compute the Gram matrix of X with itself.
         diag : bool, default=False
-            This parameter is accepted but not forwarded; retained only for signature consistency.
+            (Unused—retained only for signature consistency.)
 
         Returns
         -------
-        K : array-like
-            If Y is None, returns the Gram matrix K[X_i, X_j]. Otherwise, returns the cross-Gram matrix K[X_i, Y_j].
+        K : numpy.ndarray
+            Kernel matrix (or cross-Kernel matrix) as a NumPy array.
         """
-        # Original logic preserved exactly:
-        if Y is None:
-            K = self.kernel(X)
-        else:
-            K = self.kernel(X, Y)
 
+        # Convert inputs to CuPy arrays
+        X_cu = cp.asarray(X)
+        if Y is None:
+            K_cu = self.kernel(X_cu)
+        else:
+            Y_cu = cp.asarray(Y)
+            K_cu = self.kernel(X_cu, Y_cu)
+
+        # Convert result back to NumPy
+        K = cp.asnumpy(K_cu)
         return K
