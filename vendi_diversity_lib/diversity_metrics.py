@@ -150,8 +150,7 @@ class LogDeterminant:
         K = self.km(X, Y, diag)
         K = cp.asarray(K)
         # Compute determinant on GPU, then take logarithm
-        det_val = cp.linalg.det(K)
-        log_det = cp.log(det_val)
+        log_det = cp.logdet(K)
         return float(log_det)
 
 
