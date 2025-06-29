@@ -157,7 +157,7 @@ class HDF5DatasetReducer:
 import sys
 
 def get_score(args):
-    reducer = HDF5DatasetReducer(args[0])
+    reducer = HDF5DatasetReducer(args[1])
 
     data = reducer.get_demos()
     bandwidth = kern_utils.KernelUtilities.compute_bandwidth(data)
@@ -193,7 +193,7 @@ if __name__ == "__main__":
     maximizer = SubmodularMaximizer(metric, data)
 
     #top_idxes = maximizer.greedy_local_search(k=54)
-    top_idxes = maximizer.lazy_greedy(k=54)
+    top_idxes = maximizer.lazy_greedy(k=int(args[2]))
     #top_idxes = np.random.choice(270, size=70, replace=False)
     #top_idxes = np.arange(120)
 
