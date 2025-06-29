@@ -1,0 +1,6 @@
+cupy-cuda12x
+rich
+h5py
+
+git+https://github.com/S-sirigiri/sigkernel.git#egg=sigkernel
+git+https://github.com/S-sirigiri/KSig.git#egg=KSig
