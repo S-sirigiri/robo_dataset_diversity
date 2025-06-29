@@ -1,4 +1,5 @@
 import cupy as cp
+#cp.cuda.runtime.setDevice(1)
 import numpy as np
 from scipy.linalg import logm
 
@@ -22,16 +23,25 @@ class _Entropy:
             raise TypeError("kernel_matrix must be a KernelMatrix instance")
         self.km = kernel_matrix
 
-    def _shannon(self, K) -> float:
+    def _shannon(self, K, use_svd=False, clip_evals=False) -> float:
         # Ensure CuPy array and normalize
         K_cp = cp.asarray(K)
         n = K_cp.shape[0]
         M = K_cp / n
-        # Eigenvalues, clamped to non-negative
-        evals = cp.linalg.eigvalsh(M)
-        evals = cp.clip(evals, 0, None)
-        mask = evals > 0
-        H = -cp.sum(evals[mask] * cp.log(evals[mask]))
+        if use_svd:
+            U, S, Vt = cp.linalg.svd(K_cp, full_matrices=False)
+            signs = cp.sign(cp.einsum('ij,ji->i', U.T, K_cp @ U))
+            evals = S * signs
+            evals = S
+        else:
+            # Eigenvalues, clamped to non-negative
+            evals = cp.linalg.eigvalsh(M)
+        if clip_evals:
+            evals = cp.clip(evals, 0, None)
+            mask = evals > 0
+            H = -cp.sum(evals[mask] * cp.log(evals[mask]))
+        else:
+            H = -cp.sum(evals * cp.log(evals))
         return float(H)
 
     def _von_neumann(self, K) -> float:
@@ -149,9 +159,45 @@ class LogDeterminant:
         # Retrieve raw kernel matrix (NumPy or CuPy)
         K = self.km(X, Y, diag)
         K = cp.asarray(K)
-        # Compute determinant on GPU, then take logarithm
-        log_det = cp.logdet(K)
+        # Compute logdet
+        sign, log_det = cp.linalg.slogdet(K)
+        assert sign > 0
         return float(log_det)
+
+class Determinant:
+    """
+    Compute the determinant of a kernel matrix.
+    computed on the GPU via CuPy.
+    """
+    def __init__(self, kernel_matrix: KernelMatrix):
+        if not isinstance(kernel_matrix, KernelMatrix):
+            raise TypeError("kernel_matrix must be a KernelMatrix instance")
+        self.km = kernel_matrix
+
+    def __call__(self, X, Y=None, diag=False) -> float:
+        """
+        Evaluate log-determinant on the kernel matrix for input data.
+
+        Parameters
+        ----------
+        X : array-like
+            First set of data points for the KernelMatrix.
+        Y : array-like, optional
+            Second set of data points for cross-kernel computation.
+        diag : bool, default=False
+            Ignored placeholder for API consistency.
+
+        Returns
+        -------
+        float
+            The computed log-determinant.
+        """
+        # Retrieve raw kernel matrix (NumPy or CuPy)
+        K = self.km(X, Y, diag)
+        K = cp.asarray(K)
+        # Compute det
+        sign, det = cp.linalg.det(K)
+        return float(det)
 
 
 class VendiScore(_Entropy):

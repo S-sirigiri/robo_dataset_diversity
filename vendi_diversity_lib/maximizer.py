@@ -5,6 +5,8 @@ from typing import Callable, Iterable, TypeVar, Set, List
 import numpy as np
 rng = np.random.default_rng()
 
+from rich import print as rprint
+
 # Generic type variable for elements in the ground set
 T = TypeVar('T')
 
@@ -51,7 +53,9 @@ class SubmodularMaximizer(_Maximizer):
             heapq.heappush(heap, (-gain, e))
 
         # Greedily select up to k elements
-        for _ in range(k):
+        for i in range(k):
+            rprint('Iteration: {}'.format(i))
+            rprint('Objective value: {} \n'.format(S_val))
             while heap:
                 neg_gain, e = heapq.heappop(heap)
                 # Recompute true marginal gain for current S
@@ -80,7 +84,9 @@ class SubmodularMaximizer(_Maximizer):
         # Sample size r for desired accuracy-speed trade-off
         r = math.ceil((n / k) * math.log(1 / epsilon))
 
-        for _ in range(k):
+        for i in range(k):
+            rprint('Iteration: {}'.format(i))
+            rprint('Objective value: {} \n'.format(S_val))
             # Determine remaining elements not yet selected
             remaining = [e for e in self.X if e not in S]
             if not remaining:
@@ -124,7 +130,9 @@ class NonMonotoneSubmodularMaximizer(_Maximizer):
         S: Set[T] = set()           # Selected set
         S_val = self.F(S)          # Current objective value
 
-        for _ in range(k):
+        for i in range(k):
+            rprint('Iteration: {}'.format(i))
+            rprint('Objective value: {} \n'.format(S_val))
             # Compute marginal gains for all remaining candidates
             remaining = [e for e in self.X if e not in S]
             margins = [(e, self.F(S | {e}) - S_val) for e in remaining]
@@ -141,7 +149,7 @@ class NonMonotoneSubmodularMaximizer(_Maximizer):
             # Sample one candidate uniformly among the top-k
             idx = rng.integers(0, len(top_k))
             e_star, gain = top_k[idx]
-            if e_star is None or gain <= 0:
+            if e_star is None or (gain <= 0 and _ > 1):
                 break
 
             # Add chosen element to the set
@@ -164,7 +172,9 @@ class BlackBoxMaximizer(_Maximizer):
         # --- Greedy initialization ---
         S: Set[T] = set()
         S_val = self.F(S)
-        for _ in range(min(k, len(self.X))):
+        for i in range(min(k, len(self.X))):
+            rprint('Iteration: {}'.format(i))
+            rprint('Objective value: {} \n'.format(S_val))
             best_e, best_gain = None, -float('inf')
             for e in self.X:
                 if e in S:

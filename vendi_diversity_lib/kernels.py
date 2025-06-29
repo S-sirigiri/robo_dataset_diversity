@@ -1,5 +1,6 @@
 import numpy as np
 import cupy as cp
+#cp.cuda.runtime.setDevice(1)
 
 import ksig
 from ksig.kernels import RandomWarpingSeries
@@ -162,6 +163,8 @@ class SignatureKernelTorch:
         """
         if isinstance(X, cp.ndarray):
             X_np = cp.asnumpy(X)
+            if self.device == torch.device('cpu'):
+                return torch.from_numpy(X_np).double().to(self.device)
             return torch.from_numpy(X_np).float().to(self.device)
         elif isinstance(X, torch.Tensor):
             return X.float().to(self.device)
@@ -204,6 +207,7 @@ class SignatureKernelTorch:
         # Avoid division by zero.
         norm_factor[norm_factor == 0] = 1.0
         K_normalized = K / norm_factor
+        #K_normalized = K
 
         # Convert the result back to a cupy array.
         if K_normalized.device.type == 'cuda':
@@ -531,12 +535,12 @@ class KernelMatrix:
         sig_kernel=None,
         max_batch=None,
         device=None,
-        dyadic_order=None,
+        dyadic_order=1,
         static_kernel=None,
         bandwidth=None,
-        n_levels=None,
-        n_components=None,
-        method=None,
+        n_levels=5,
+        n_components=100,
+        method='TRP',
         max_warp=None,
         stdev=None,
         n_features=None,
