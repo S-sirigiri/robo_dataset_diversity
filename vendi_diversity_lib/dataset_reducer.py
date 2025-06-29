@@ -156,9 +156,7 @@ class HDF5DatasetReducer:
 
 import sys
 
-def test():
-    args = sys.argv[1:]
-
+def get_score(args):
     reducer = HDF5DatasetReducer(args[0])
 
     data = reducer.get_demos()
@@ -177,9 +175,10 @@ def test():
 
 
 if __name__ == "__main__":
-    test()
-    #reducer = HDF5DatasetReducer('/home/vardhan/Projects/robo_dataset_diversity/robomimic/datasets/lift/ph/low_dim_v15.hdf5')
-    reducer = HDF5DatasetReducer('/home/vardhan/Projects/robo_dataset_diversity/robomimic/datasets/lift/mh/low_dim_v15.hdf5')
+    args = sys.argv[1:]
+    if args[0] == '--get_score':
+        get_score(args)
+    reducer = HDF5DatasetReducer(args[0])
 
     data = reducer.get_demos()
 
@@ -198,4 +197,4 @@ if __name__ == "__main__":
     #top_idxes = np.random.choice(270, size=70, replace=False)
     #top_idxes = np.arange(120)
 
-    out_path = reducer.process(top_idxes, '54_examples_vendi_shannon', metric=None)
+    out_path = reducer.process(top_idxes, args[1], metric=None)
