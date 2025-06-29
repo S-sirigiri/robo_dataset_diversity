@@ -193,7 +193,7 @@ if __name__ == "__main__":
     maximizer = SubmodularMaximizer(metric, data)
 
     #top_idxes = maximizer.greedy_local_search(k=54)
-    top_idxes = maximizer.lazy_greedy(k=54)
+    top_idxes = maximizer.lazy_greedy(k=int(args[2]))
     #top_idxes = np.random.choice(270, size=70, replace=False)
     #top_idxes = np.arange(120)
 
