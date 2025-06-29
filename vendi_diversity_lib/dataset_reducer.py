@@ -157,15 +157,15 @@ class HDF5DatasetReducer:
 import sys
 
 def get_score(args):
-    reducer = HDF5DatasetReducer(args[0])
+    reducer = HDF5DatasetReducer(args[1])
 
     data = reducer.get_demos()
     bandwidth = kern_utils.KernelUtilities.compute_bandwidth(data)
 
-    #km = KernelMatrix(kernel_type="Random fourier signature features kernel", bandwidth=bandwidth)
-    #km.kernel.fit(data)
+    km = KernelMatrix(kernel_type="Random fourier signature features kernel", bandwidth=bandwidth)
+    km.kernel.fit(data)
     #km = KernelMatrix(kernel_type='Signature kernel torch', bandwidth=bandwidth, device='cpu', max_batch=250)
-    km = KernelMatrix(kernel_type='Signature kernel cupy', bandwidth=bandwidth)
+    #km = KernelMatrix(kernel_type='Signature kernel cupy', bandwidth=bandwidth)
     metric = VendiScore(km)
     #metric = ShannonEntropy(km)
 
@@ -193,8 +193,8 @@ if __name__ == "__main__":
     maximizer = SubmodularMaximizer(metric, data)
 
     #top_idxes = maximizer.greedy_local_search(k=54)
-    top_idxes = maximizer.lazy_greedy(k=int(args[2]))
-    #top_idxes = np.random.choice(270, size=70, replace=False)
+    #top_idxes = maximizer.lazy_greedy(k=int(args[2]))
+    top_idxes = np.random.choice(270, size=int(args[2]), replace=False)
     #top_idxes = np.arange(120)
 
     out_path = reducer.process(top_idxes, args[1], metric=None)
