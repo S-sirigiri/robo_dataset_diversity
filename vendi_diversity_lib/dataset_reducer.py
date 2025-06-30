@@ -195,8 +195,7 @@ def parse_args():
     # Maximizer options
     parser.add_argument('--maximizer', choices=['submodular', 'nonmonotone', 'blackbox', 'random', 'arrange'],
                         help='Selection strategy')
-    parser.add_argument('--stochastic-greedy', action='store_true',
-                        help='Use stochastic greedy for submodular maximizer')
+    parser.add_argument('--stochastic-greedy', action='store_true', help='Use stochastic greedy for submodular maximizer')
     parser.add_argument('--k', type=int, help='Cardinality constraint (number of demos to select)')
     parser.add_argument('--epsilon', type=float, default=0.01, help='epsilon for stochastic greedy')
     parser.add_argument('--num-samples', type=int, default=1000, help='num_samples for cross-entropy maximizer')
@@ -214,11 +213,8 @@ def parse_args():
         parser.error('Reduction requires --maximizer')
     if args.k is None:
         parser.error('Reduction requires --k')
-    # Metric required for all except pure random baseline
     if args.maximizer != 'random' and args.metric is None:
         parser.error('Reduction requires --metric unless --maximizer random')
-
-    # Stochastic greedy only valid with submodular
     if args.stochastic_greedy and args.maximizer != 'submodular':
         parser.error('--stochastic-greedy requires --maximizer submodular')
     return args
@@ -231,9 +227,6 @@ def main():
 
     # Score-only mode
     if args.get_score:
-        if args.metric is None:
-            raise ValueError('Must provide --metric to compute score')
-        # Kernel + metric instantiation for score
         bandwidth = args.bandwidth or kern_utils.KernelUtilities.compute_bandwidth(data)
         km = KernelMatrix(
             kernel_type=args.kernel_type,
@@ -260,7 +253,7 @@ def main():
             metric = VendiScore(km, method=args.vendi_method)
         elif args.metric == 'logdet':
             metric = LogDeterminant(km)
-        elif args.metric == 'det':
+        else:
             metric = Determinant(km)
         rprint(f"The dataset '{args.input}' has {data.shape[0]} train demos.")
         rprint(f"Score of dataset: {reducer.get_diversity_score(metric):.16f}")
@@ -270,7 +263,7 @@ def main():
     if args.maximizer != 'random':
         bandwidth = args.bandwidth or kern_utils.KernelUtilities.compute_bandwidth(data)
         km = KernelMatrix(
-            kernel_type=args.kernel-type,
+            kernel_type=args.kernel_type,
             max_batch=args.max_batch,
             device=args.device,
             dyadic_order=args.dyadic_order,
@@ -294,7 +287,7 @@ def main():
             metric = VendiScore(km, method=args.vendi_method)
         elif args.metric == 'logdet':
             metric = LogDeterminant(km)
-        elif args.metric == 'det':
+        else:
             metric = Determinant(km)
     else:
         metric = None
