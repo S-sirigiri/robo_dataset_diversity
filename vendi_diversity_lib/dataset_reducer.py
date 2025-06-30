@@ -169,7 +169,7 @@ def get_score(args):
     metric = VendiScore(km)
     #metric = ShannonEntropy(km)
 
-    rprint('The dataset ' + "'" + args[0] + "'" + ' has ' + str(data.shape[0]) + ' train demos.')
+    rprint('The dataset ' + "'" + args[1] + "'" + ' has ' + str(data.shape[0]) + ' train demos.')
     rprint(f"Score of dataset: {reducer.get_diversity_score(metric):.{16}f}")
     exit(0)
 
