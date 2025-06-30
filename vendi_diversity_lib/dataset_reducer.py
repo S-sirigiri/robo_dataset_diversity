@@ -219,7 +219,7 @@ def parse_args():
         parser.error('Reduction requires --metric unless --maximizer random')
     if args.stochastic_greedy and args.maximizer != 'submodular':
         parser.error('--stochastic-greedy requires --maximizer submodular')
-    if args.cross-entropy and args.maximizer != 'blackbox':
+    if args.cross_entropy and args.maximizer != 'blackbox':
         parser.error('--cross-entropy requires --maximizer blackbox')
     return args
 
@@ -309,7 +309,7 @@ def main():
         top_idxes = maximizer.random_greedy(args.k)
     elif args.maximizer == 'blackbox':
         maximizer = BlackBoxMaximizer(metric, data)
-        if args.cross-entropy:
+        if args.cross_entropy:
             top_idxes = maximizer.cross_entropy_maximizer(
                 args.k,
                 num_samples=args.num_samples,
@@ -318,7 +318,7 @@ def main():
                 smoothing=args.smoothing
             )
         else:
-            top_idxes = maximizer.local_maximizer(args.k)
+            top_idxes = maximizer.local_greedy_search(args.k)
     elif args.maximizer == 'random':
         top_idxes = np.random.choice(N, size=args.k, replace=False).tolist()
     elif args.maximizer == 'arrange':
