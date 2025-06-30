@@ -324,7 +324,10 @@ def main():
         raise ValueError(f"Unknown maximizer: {args.maximizer}")
 
     # Reduce and write
-    reducer.process(top_idxes, args.output_suffix, metric)
+    if args.get_score:
+        reducer.process(top_idxes, args.output_suffix, metric=metric)
+    else:
+        reducer.process(top_idxes, args.output_suffix, metric=None)
 
 
 if __name__ == '__main__':
