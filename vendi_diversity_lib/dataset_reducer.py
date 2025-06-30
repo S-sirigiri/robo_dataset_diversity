@@ -1,8 +1,5 @@
-import os
 import h5py
 import numpy as np
-from scipy.linalg import bandwidth
-from sympy.physics.quantum.density import entropy
 
 from maximizer import BlackBoxMaximizer
 from maximizer import SubmodularMaximizer
