@@ -318,7 +318,7 @@ def main():
                 smoothing=args.smoothing
             )
         else:
-            top_idxes = maximizer.local_greedy_search(args.k)
+            top_idxes = maximizer.greedy_local_search(args.k)
     elif args.maximizer == 'random':
         top_idxes = np.random.choice(N, size=args.k, replace=False).tolist()
     elif args.maximizer == 'arrange':
