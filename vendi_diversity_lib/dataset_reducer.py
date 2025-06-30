@@ -163,6 +163,7 @@ def parse_args():
     parser.add_argument('--input', '-i', required=True, help='Path to input HDF5 file')
     parser.add_argument('--output-suffix', '-o', default='reduced', help='Suffix for output filename')
     parser.add_argument('--get-score', action='store_true', help='Only compute diversity score and exit')
+    parser.add_argument('--get-score-after-maximizing', action='store_true', help='Compute diversity score after maximizing')
 
     # Kernel options
     parser.add_argument('--kernel-type', default='Random fourier signature features kernel',
@@ -324,7 +325,7 @@ def main():
         raise ValueError(f"Unknown maximizer: {args.maximizer}")
 
     # Reduce and write
-    if args.get_score:
+    if args.get_score_after_maximizing:
         reducer.process(top_idxes, args.output_suffix, metric=metric)
     else:
         reducer.process(top_idxes, args.output_suffix, metric=None)
