@@ -2,6 +2,7 @@ import os
 import h5py
 import numpy as np
 from scipy.linalg import bandwidth
+from sympy.physics.quantum.density import entropy
 
 from maximizer import BlackBoxMaximizer
 from maximizer import SubmodularMaximizer
@@ -196,6 +197,7 @@ def parse_args():
     parser.add_argument('--maximizer', choices=['submodular', 'nonmonotone', 'blackbox', 'random', 'arrange'],
                         help='Selection strategy')
     parser.add_argument('--stochastic-greedy', action='store_true', help='Use stochastic greedy for submodular maximizer')
+    parser.add_argument('--cross-entropy', action='store_true', help='Use cross-entropy for blackbox maximizer')
     parser.add_argument('--k', type=int, help='Cardinality constraint (number of demos to select)')
     parser.add_argument('--epsilon', type=float, default=0.01, help='epsilon for stochastic greedy')
     parser.add_argument('--num-samples', type=int, default=1000, help='num_samples for cross-entropy maximizer')
@@ -217,6 +219,8 @@ def parse_args():
         parser.error('Reduction requires --metric unless --maximizer random')
     if args.stochastic_greedy and args.maximizer != 'submodular':
         parser.error('--stochastic-greedy requires --maximizer submodular')
+    if args.cross-entropy and args.maximizer != 'blackbox':
+        parser.error('--cross-entropy requires --maximizer blackbox')
     return args
 
 
@@ -305,13 +309,16 @@ def main():
         top_idxes = maximizer.random_greedy(args.k)
     elif args.maximizer == 'blackbox':
         maximizer = BlackBoxMaximizer(metric, data)
-        top_idxes = maximizer.cross_entropy_maximizer(
-            args.k,
-            num_samples=args.num_samples,
-            elite_frac=args.elite_frac,
-            max_iter=args.max_iter,
-            smoothing=args.smoothing
-        )
+        if args.cross-entropy:
+            top_idxes = maximizer.cross_entropy_maximizer(
+                args.k,
+                num_samples=args.num_samples,
+                elite_frac=args.elite_frac,
+                max_iter=args.max_iter,
+                smoothing=args.smoothing
+            )
+        else:
+            top_idxes = maximizer.local_maximizer(args.k)
     elif args.maximizer == 'random':
         top_idxes = np.random.choice(N, size=args.k, replace=False).tolist()
     elif args.maximizer == 'arrange':
