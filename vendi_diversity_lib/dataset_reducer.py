@@ -18,7 +18,6 @@ from utils import kern_utils
 
 from rich import print as rprint
 
-from vendi_diversity_lib.tests.test_ksig import n_levels
 
 
 class HDF5DatasetReducer:
