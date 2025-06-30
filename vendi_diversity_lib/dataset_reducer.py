@@ -18,6 +18,8 @@ from utils import kern_utils
 
 from rich import print as rprint
 
+from vendi_diversity_lib.tests.test_ksig import n_levels
+
 
 class HDF5DatasetReducer:
     def __init__(self, input_path: str):
@@ -184,7 +186,9 @@ if __name__ == "__main__":
 
     bandwidth = kern_utils.KernelUtilities.compute_bandwidth(data)
 
-    km = KernelMatrix(kernel_type="Random fourier signature features kernel", bandwidth=bandwidth)
+    n_levels = int(input('Number of levels: '))
+    n_components = int(input('Number of components: '))
+    km = KernelMatrix(kernel_type="Random fourier signature features kernel", bandwidth=bandwidth, n_levels=n_levels, n_components=n_components)
     km.kernel.fit(data)
     #km = KernelMatrix(kernel_type='Signature kernel cupy', bandwidth=bandwidth)
     metric = ShannonEntropy(km)
