@@ -184,9 +184,9 @@ if __name__ == "__main__":
 
     bandwidth = kern_utils.KernelUtilities.compute_bandwidth(data)
 
-    #km = KernelMatrix(kernel_type="Random fourier signature features kernel", bandwidth=bandwidth)
-    #km.kernel.fit(data)
-    km = KernelMatrix(kernel_type='Signature kernel cupy', bandwidth=bandwidth)
+    km = KernelMatrix(kernel_type="Random fourier signature features kernel", bandwidth=bandwidth)
+    km.kernel.fit(data)
+    #km = KernelMatrix(kernel_type='Signature kernel cupy', bandwidth=bandwidth)
     metric = ShannonEntropy(km)
     #metric = LogDeterminant(km)
     #maximizer = BlackBoxMaximizer(metric, data)
