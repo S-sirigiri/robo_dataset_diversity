@@ -194,12 +194,10 @@ def parse_args():
 
     # Maximizer options
     parser.add_argument('--maximizer', choices=['submodular', 'nonmonotone', 'blackbox', 'random', 'arrange'],
-                        required=True,
-                        help='Type of selection strategy: submodular, nonmonotone, blackbox, random, or arrange')
+                        help='Selection strategy')
     parser.add_argument('--stochastic-greedy', action='store_true',
-                        help='Use stochastic greedy for submodular maximizer (requires --maximizer submodular)')
-    parser.add_argument('--k', type=int, required='--get-score' not in sys.argv,
-                        help='Cardinality constraint (number of demos to select)')
+                        help='Use stochastic greedy for submodular maximizer')
+    parser.add_argument('--k', type=int, help='Cardinality constraint (number of demos to select)')
     parser.add_argument('--epsilon', type=float, default=0.01, help='epsilon for stochastic greedy')
     parser.add_argument('--num-samples', type=int, default=1000, help='num_samples for cross-entropy maximizer')
     parser.add_argument('--elite-frac', type=float, default=0.1, help='elite_frac for cross-entropy maximizer')
@@ -207,76 +205,113 @@ def parse_args():
     parser.add_argument('--smoothing', type=float, default=0.7, help='smoothing for cross-entropy maximizer')
 
     args = parser.parse_args()
-    if not args.get_score:
-        if args.maximizer in ['submodular', 'nonmonotone', 'blackbox', 'random', 'arrange'] and args.k is None:
-            parser.error('Reduction requires --k')
-        if args.maximizer == 'submodular' and args.stochastic_greedy and args.epsilon <= 0:
-            parser.error('--epsilon must be >0 for stochastic greedy')
+    # If only scoring, no further args required
+    if args.get_score:
+        return args
+
+    # For reduction runs, ensure required args
+    if args.maximizer is None:
+        parser.error('Reduction requires --maximizer')
+    if args.k is None:
+        parser.error('Reduction requires --k')
+    # Metric required for all except pure random baseline
+    if args.maximizer != 'random' and args.metric is None:
+        parser.error('Reduction requires --metric unless --maximizer random')
+
+    # Stochastic greedy only valid with submodular
+    if args.stochastic_greedy and args.maximizer != 'submodular':
+        parser.error('--stochastic-greedy requires --maximizer submodular')
     return args
 
 
 def main():
     args = parse_args()
-    # Load and pad dataset
     reducer = HDF5DatasetReducer(args.input)
     data = reducer.get_demos()
 
-    # Compute bandwidth if needed
-    bandwidth = args.bandwidth or kern_utils.KernelUtilities.compute_bandwidth(data)
-
-    # Build kernel
-    km = KernelMatrix(
-        kernel_type=args.kernel_type,
-        max_batch=args.max_batch,
-        device=args.device,
-        dyadic_order=args.dyadic_order,
-        bandwidth=bandwidth,
-        n_levels=args.n_levels,
-        n_components=args.n_components,
-        method=args.method,
-        max_warp=args.max_warp,
-        stdev=args.stdev,
-        n_features=args.n_features,
-        random_state=args.random_state,
-        use_gpu=args.use_gpu
-    )
-    if hasattr(km.kernel, 'fit'):
-        km.kernel.fit(data)
-
-    # Instantiate metric
-    metric = None
-    if args.metric == 'shannon':
-        metric = ShannonEntropy(km)
-    elif args.metric == 'von_neumann':
-        metric = VonNeumannEntropy(km)
-    elif args.metric == 'vendi':
-        metric = VendiScore(km, method=args.vendi_method)
-    elif args.metric == 'logdet':
-        metric = LogDeterminant(km)
-    elif args.metric == 'det':
-        metric = Determinant(km)
-
     # Score-only mode
     if args.get_score:
+        if args.metric is None:
+            raise ValueError('Must provide --metric to compute score')
+        # Kernel + metric instantiation for score
+        bandwidth = args.bandwidth or kern_utils.KernelUtilities.compute_bandwidth(data)
+        km = KernelMatrix(
+            kernel_type=args.kernel_type,
+            max_batch=args.max_batch,
+            device=args.device,
+            dyadic_order=args.dyadic_order,
+            bandwidth=bandwidth,
+            n_levels=args.n_levels,
+            n_components=args.n_components,
+            method=args.method,
+            max_warp=args.max_warp,
+            stdev=args.stdev,
+            n_features=args.n_features,
+            random_state=args.random_state,
+            use_gpu=args.use_gpu
+        )
+        if hasattr(km.kernel, 'fit'):
+            km.kernel.fit(data)
+        if args.metric == 'shannon':
+            metric = ShannonEntropy(km)
+        elif args.metric == 'von_neumann':
+            metric = VonNeumannEntropy(km)
+        elif args.metric == 'vendi':
+            metric = VendiScore(km, method=args.vendi_method)
+        elif args.metric == 'logdet':
+            metric = LogDeterminant(km)
+        elif args.metric == 'det':
+            metric = Determinant(km)
         rprint(f"The dataset '{args.input}' has {data.shape[0]} train demos.")
         rprint(f"Score of dataset: {reducer.get_diversity_score(metric):.16f}")
         sys.exit(0)
 
-    # Selection strategy
+    # Instantiate kernel + metric for reduction (if needed)
+    if args.maximizer != 'random':
+        bandwidth = args.bandwidth or kern_utils.KernelUtilities.compute_bandwidth(data)
+        km = KernelMatrix(
+            kernel_type=args.kernel-type,
+            max_batch=args.max_batch,
+            device=args.device,
+            dyadic_order=args.dyadic_order,
+            bandwidth=bandwidth,
+            n_levels=args.n_levels,
+            n_components=args.n_components,
+            method=args.method,
+            max_warp=args.max_warp,
+            stdev=args.stdev,
+            n_features=args.n_features,
+            random_state=args.random_state,
+            use_gpu=args.use_gpu
+        )
+        if hasattr(km.kernel, 'fit'):
+            km.kernel.fit(data)
+        if args.metric == 'shannon':
+            metric = ShannonEntropy(km)
+        elif args.metric == 'von_neumann':
+            metric = VonNeumannEntropy(km)
+        elif args.metric == 'vendi':
+            metric = VendiScore(km, method=args.vendi_method)
+        elif args.metric == 'logdet':
+            metric = LogDeterminant(km)
+        elif args.metric == 'det':
+            metric = Determinant(km)
+    else:
+        metric = None
+
     N = data.shape[0]
-    rng = np.random.default_rng(args.random_state)
+    # Selection
     if args.maximizer == 'submodular':
-        maximizer = SubmodularMaximizer(metric, range(N))
+        maximizer = SubmodularMaximizer(metric, data)
         if args.stochastic_greedy:
             top_idxes = maximizer.stochastic_greedy(args.k, epsilon=args.epsilon)
         else:
             top_idxes = maximizer.lazy_greedy(args.k)
     elif args.maximizer == 'nonmonotone':
-        maximizer = NonMonotoneSubmodularMaximizer(metric, range(N))
+        maximizer = NonMonotoneSubmodularMaximizer(metric, data)
         top_idxes = maximizer.random_greedy(args.k)
     elif args.maximizer == 'blackbox':
-        maximizer = BlackBoxMaximizer(metric, range(N))
-        # choose cross-entropy if any CE params specified
+        maximizer = BlackBoxMaximizer(metric, data)
         top_idxes = maximizer.cross_entropy_maximizer(
             args.k,
             num_samples=args.num_samples,
@@ -285,16 +320,13 @@ def main():
             smoothing=args.smoothing
         )
     elif args.maximizer == 'random':
-        top_idxes = rng.choice(N, size=args.k, replace=False).tolist()
+        top_idxes = np.random.choice(N, size=args.k, replace=False).tolist()
     elif args.maximizer == 'arrange':
-        # Sort demos by individual metric score
-        scores = [metric(data[[i]]) for i in range(N)]
-        sorted_idx = sorted(range(N), key=lambda i: scores[i], reverse=True)
-        top_idxes = sorted_idx[:args.k]
+        top_idxes = np.arange(args.k).tolist()
     else:
         raise ValueError(f"Unknown maximizer: {args.maximizer}")
 
-    # Run reduction and write output
+    # Reduce and write
     reducer.process(top_idxes, args.output_suffix, metric)
 
 
