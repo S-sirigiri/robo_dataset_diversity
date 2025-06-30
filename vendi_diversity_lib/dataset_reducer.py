@@ -260,7 +260,7 @@ def main():
         sys.exit(0)
 
     # Instantiate kernel + metric for reduction (if needed)
-    if args.maximizer != 'random':
+    if args.maximizer != 'random' or True:
         bandwidth = args.bandwidth or kern_utils.KernelUtilities.compute_bandwidth(data)
         km = KernelMatrix(
             kernel_type=args.kernel_type,
