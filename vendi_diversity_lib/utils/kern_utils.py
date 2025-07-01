@@ -19,7 +19,7 @@ class KernelUtilities:
         added for numerical stability.
 
         Args:
-            X (cp.ndarray): A 1D array of sample values for which to compute the bandwidth.
+            X (cp.ndarray): A 3D array of sample values for which to compute the bandwidth.
 
         Returns:
             float: The computed bandwidth value.
