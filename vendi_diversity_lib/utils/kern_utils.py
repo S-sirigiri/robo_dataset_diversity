@@ -1,4 +1,5 @@
 import cupy as cp
+import numpy as np
 
 class KernelUtilities:
     """
@@ -12,19 +13,39 @@ class KernelUtilities:
     @staticmethod
     def compute_bandwidth(X):
         """
-        Compute a heuristic bandwidth for kernel operations based on the data X.
+        Compute a heuristic bandwidth for kernel operations.
 
-        The bandwidth is calculated as the median of the values in X divided by
-        the natural logarithm of the number of samples, with a small constant
-        added for numerical stability.
+        For 3D inputs of shape (N, T, d), returns a single float:
+            median(X) / log(N) + 1e-3
+
+        For 4D inputs of shape (N, I, T, d), returns a 1D CuPy array of length I,
+        where each entry is the bandwidth computed on X[:, i, :, :].
 
         Args:
-            X (cp.ndarray): A 3D array of sample values for which to compute the bandwidth.
+            X (np.ndarray or cp.ndarray): A 3D or 4D array.
 
         Returns:
-            float: The computed bandwidth value.
+            float or cp.ndarray: If input is 3D, returns a Python float.
+                                 If input is 4D, returns a 1D CuPy array of length I.
         """
+        # ensure we're working with a CuPy array
         X = cp.asarray(X)
-        return (
-                cp.median(X) / cp.log(X.shape[0]) + 1e-3
-        )
+
+        if X.ndim == 3:
+            # X.shape == (N, T, d)
+            N = X.shape[0]
+            bw = cp.median(X) / cp.log(N) + 1e-3
+            return float(bw)
+
+        elif X.ndim == 4:
+            # X.shape == (N, I, T, d)
+            N, I, T, d = X.shape
+            # compute median over axes 0 (samples), 2 (time), and 3 (dims) for each of the I slices
+            medians = cp.median(X, axis=(0, 2, 3))  # shape (I,)
+            bws = medians / cp.log(N) + 1e-3  # shape (I,)
+            return bws
+
+        else:
+            raise ValueError(
+                f"compute_bandwidth requires a 3D or 4D array, got {X.ndim}D."
+            )

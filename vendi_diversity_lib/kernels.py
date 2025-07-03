@@ -488,7 +488,7 @@ class RandomWarpingSeriesKernel:
 
 
 
-class KernelMatrix:
+class _KernelMatrix:
     """
     A unified wrapper to select and evaluate different sequence-based kernels.
 
@@ -619,3 +619,134 @@ class KernelMatrix:
         # Convert result back to NumPy
         K = cp.asnumpy(K_cu)
         return K
+
+class KernelMatrix:
+    """
+        Compute the elementwise average of I kernel matrices, one per input "channel."
+
+        Each channel is now represented along the second axis of a 4D array.
+
+        Parameters
+        ----------
+        kernel_type : str or None
+            Which kernel to use (see KernelMatrix docstring). If None, defaults to
+            "Signature kernel" (Torch).
+        sig_kernel, max_batch, device, dyadic_order, static_kernel, n_levels,
+        n_components, method, max_warp, stdev, n_features, random_state, use_gpu,
+        ga_kernel : as in KernelMatrix
+        bandwidth : float or array-like of length I
+            If float, the same bandwidth is used for every channel.
+            If array-like of length I, each channel i gets bandwidth[i].
+
+        Notes
+        -----
+        On call, X and Y should be numpy arrays of shape:
+            X: (N, I, T, d)   and   Y: (M, I, T, d)
+        where
+            N = number of samples in X,
+            M = number of samples in Y (if provided),
+            I = number of channels (summed/averaged over),
+            T = sequence length,
+            d = (common) feature dimension per channel.
+
+        The returned kernel matrix is of shape (N, M) (or (N, N) if Y is None),
+        computed as
+            K = (1 / I) * sum_{i=0..I-1} K_i
+        where K_i = kernel(X[:, i, :, :], Y[:, i, :, :]).
+        """
+
+    def __init__(
+            self,
+            kernel_type=None,
+            sig_kernel=None,
+            max_batch=None,
+            device=None,
+            dyadic_order=1,
+            static_kernel=None,
+            bandwidth=None,
+            n_levels=5,
+            n_components=100,
+            method='TRP',
+            max_warp=None,
+            stdev=None,
+            n_features=None,
+            random_state=None,
+            use_gpu=None,
+            ga_kernel=None
+    ):
+        # Store shared kernel parameters (except bandwidth)
+        self.kernel_kwargs = {
+            'kernel_type': kernel_type,
+            'sig_kernel': sig_kernel,
+            'max_batch': max_batch,
+            'device': device,
+            'dyadic_order': dyadic_order,
+            'static_kernel': static_kernel,
+            'n_levels': n_levels,
+            'n_components': n_components,
+            'method': method,
+            'max_warp': max_warp,
+            'stdev': stdev,
+            'n_features': n_features,
+            'random_state': random_state,
+            'use_gpu': use_gpu,
+            'ga_kernel': ga_kernel
+        }
+        # Can be scalar or length-I sequence
+        self.bandwidth = bandwidth
+
+    def __call__(self, X, Y=None, diag=False):
+        """
+        Compute the average kernel over I channels along axis=1.
+
+        Parameters
+        ----------
+        X : numpy.ndarray, shape (N, I, T, d)
+            Input batch for which to compute the Gram matrix.
+        Y : numpy.ndarray or None, shape (M, I, T, d)
+            Optional second batch. If None, uses X for Gram matrix.
+        diag : bool, unused (for API compatibility)
+
+        Returns
+        -------
+        K_avg : numpy.ndarray, shape (N, M) or (N, N)
+            The elementwise average of the I per-channel kernel matrices.
+        """
+        # Ensure X is a 4D array
+        X = cp.asarray(X)
+        if X.ndim != 4:
+            raise ValueError(f"X must be a 4D array (N, I, T, d), got {X.shape}")
+        N, I, T, d = X.shape
+
+        # Prepare Y
+        if Y is None:
+            M = N
+            Y = None
+        else:
+            Y = cp.asarray(Y)
+            if Y.ndim != 4 or Y.shape[1] != I:
+                raise ValueError(f"Y must be a 4D array (M, I, T, d) matching X's second axis. Got {Y.shape}")
+            M = Y.shape[0]
+
+        # Broadcast bandwidth to list of length I
+        bw = self.bandwidth
+        if cp.ndim(bw) == 0:
+            bws = [bw] * I
+        else:
+            bws = list(bw)
+            if len(bws) != I:
+                raise ValueError(f"bandwidth must have length I={I}, got {len(bws)}")
+
+        # Sum per-channel kernel evaluations
+        K_sum = None
+        for i in range(I):
+            Xi = X[:, i, :, :]
+            Yi = None if Y is None else Y[:, i, :, :]
+            # instantiate kernel with channel-specific bandwidth
+            km_i = _KernelMatrix(**{**self.kernel_kwargs, 'bandwidth': bws[i]})
+            Ki = km_i(Xi, Yi, diag=diag)
+            K_sum = Ki if K_sum is None else K_sum + Ki
+
+        # Return the elementwise average across channels
+        K_sum_norm = K_sum / I
+        return cp.asnumpy(K_sum_norm)
