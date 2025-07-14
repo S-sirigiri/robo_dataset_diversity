@@ -90,7 +90,10 @@ def parse_args():
 def main():
     args = parse_args()
     rprint("[red]Loading the dataset\n[/red]")
-    reducer = HDF5DatasetReducer(args.input, args.embedding)
+    if args.maximizer == 'random':
+        reducer = HDF5DatasetReducer(args.input, embedding=None)
+    else:
+        reducer = HDF5DatasetReducer(args.input, args.embedding)
     data = reducer.get_demos()
 
     # Score-only mode
@@ -185,6 +188,8 @@ def main():
         else:
             top_idxes = maximizer.greedy_local_search(k=args.k, max_iters=args.max_iter)
     elif args.maximizer == 'random':
+        seed = 12345
+        np.random.seed(seed)
         top_idxes = np.random.choice(N, size=args.k, replace=False).tolist()
     elif args.maximizer == 'arrange':
         top_idxes = np.arange(args.k).tolist()

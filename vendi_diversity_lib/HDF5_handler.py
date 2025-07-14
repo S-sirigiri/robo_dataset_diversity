@@ -20,7 +20,10 @@ class HDF5DatasetReducer:
         self.index_to_id = {}     # Maps array index -> demo_id
 
         # Initialize the image embedder for any uint8 image fields
-        self.embedder = ImageEmbedder(embedding=embedding)
+        if embedding is not None:
+            self.embedder = ImageEmbedder(embedding=embedding)
+        else:
+            self.embedder = None
 
         self._load_train_ids()
         self._build_padded_array()
@@ -52,10 +55,11 @@ class HDF5DatasetReducer:
                     data = obs_grp[k][()]
                     # Embed uint8 image sequences
                     if data.dtype == np.uint8 and data.ndim == 4:
-                        if print_flag: rprint(f"Computing embedding for [green]{demo_id}[/green]...")
-                        print_flag = False
-                        emb = self.embedder.embed(data)          # (T, D_img)
-                        obs_list.append(emb.numpy())
+                        if self.embedder is not None:
+                            if print_flag: rprint(f"Computing embedding for [green]{demo_id}[/green]...")
+                            print_flag = False
+                            emb = self.embedder.embed(data)          # (T, D_img)
+                            obs_list.append(emb.numpy())
                     else:
                         arr = data
                         if arr.ndim == 1:
@@ -69,8 +73,9 @@ class HDF5DatasetReducer:
                 for k in sorted(nxt_grp.keys()):
                     data = nxt_grp[k][()]
                     if data.dtype == np.uint8 and data.ndim == 4:
-                        emb = self.embedder.embed(data)
-                        nxt_list.append(emb.numpy())
+                        if self.embedder is not None:
+                            emb = self.embedder.embed(data)
+                            nxt_list.append(emb.numpy())
                     else:
                         arr = data
                         if arr.ndim == 1:
