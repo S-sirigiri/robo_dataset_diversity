@@ -44,6 +44,10 @@ class HDF5DatasetReducer:
         Loads each train demo, flattens per-timestep features into a vector,
         and pads all to the maximum trajectory length.
         """
+        def _standardize(v):
+            v = (v - np.min(v)) / (np.max(v) - np.min(v))
+            return v
+
         flat_sequences = []
         max_T = 0
 
@@ -55,19 +59,30 @@ class HDF5DatasetReducer:
                 obs_grp = grp['obs']
                 obs_list = [obs_grp[k][()] for k in sorted(obs_grp.keys())]
                 obs = np.concatenate(obs_list, axis=1)
+                #obs = _standardize(obs)
 
                 # Flatten all next_obs fields
                 nxt_grp = grp['next_obs']
                 nxt_list = [nxt_grp[k][()] for k in sorted(nxt_grp.keys())]
                 next_obs = np.concatenate(nxt_list, axis=1)
+                #next_obs = _standardize(next_obs)
 
                 actions = grp['actions'][()]
+                #actions = _standardize(actions)
+
                 dones   = grp['dones'][()].reshape(-1, 1)
+                #dones = _standardize(dones)
+
                 rewards = grp['rewards'][()].reshape(-1, 1)
+                #rewards = _standardize(rewards)
+
                 states  = grp['states'][()]
+                #states = _standardize(states)
 
                 # Concat into shape (T, d)
-                seq = np.concatenate([obs, next_obs, actions, dones, rewards, states], axis=1)
+                fields = [obs, next_obs, actions, dones, rewards, states]
+                seq = np.concatenate(fields, axis=1)
+                #seq = _standardize(seq)
                 flat_sequences.append(seq)
 
                 max_T = max(max_T, seq.shape[0])
@@ -200,7 +215,7 @@ def parse_args():
     parser.add_argument('--epsilon', type=float, default=0.01, help='epsilon for stochastic greedy')
     parser.add_argument('--num-samples', type=int, default=1000, help='num_samples for cross-entropy maximizer')
     parser.add_argument('--elite-frac', type=float, default=0.1, help='elite_frac for cross-entropy maximizer')
-    parser.add_argument('--max-iter', type=int, default=50, help='max_iter for cross-entropy maximizer')
+    parser.add_argument('--max-iter', type=int, default=50, help='max_iter for blackbox maximizers')
     parser.add_argument('--smoothing', type=float, default=0.7, help='smoothing for cross-entropy maximizer')
 
     args = parser.parse_args()
@@ -316,7 +331,7 @@ def main():
                 smoothing=args.smoothing
             )
         else:
-            top_idxes = maximizer.greedy_local_search(args.k)
+            top_idxes = maximizer.greedy_local_search(k=args.k, max_iters=args.max_iter)
     elif args.maximizer == 'random':
         top_idxes = np.random.choice(N, size=args.k, replace=False).tolist()
     elif args.maximizer == 'arrange':

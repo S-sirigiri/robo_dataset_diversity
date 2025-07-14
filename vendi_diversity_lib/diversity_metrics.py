@@ -196,7 +196,8 @@ class Determinant:
         K = self.km(X, Y, diag)
         K = cp.asarray(K)
         # Compute det
-        sign, det = cp.linalg.det(K)
+        det = cp.linalg.det(K) - 1e-6
+        det = -cp.log(1 - det)
         return float(det)
 
 

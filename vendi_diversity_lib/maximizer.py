@@ -23,7 +23,7 @@ class _Maximizer:
         # Define a set-based objective: returns 0.0 for empty sets, else slices the universe
         def F(idx_set: Set[int]) -> float:
             if not idx_set:
-                return 0.0
+                return -1000
             subarr = universe_set[list(idx_set)]
             return objective_metric(subarr)
 
@@ -105,9 +105,13 @@ class SubmodularMaximizer(_Maximizer):
                     best_gain, best_e = gain, e
 
             # Add the element with positive gain if found
-            if best_gain > 0 and best_e is not None:
-                S.add(best_e)
-                S_val += best_gain
+            #if best_gain > 0 and best_e is not None:
+            #    S.add(best_e)
+            #    S_val += best_gain
+            if best_e is None:
+                break
+            S.add(best_e)
+            S_val += best_gain
 
         return S
 
@@ -163,7 +167,7 @@ class BlackBoxMaximizer(_Maximizer):
     """
     Black‐box maximizer under a cardinality k constraint.
     """
-    def greedy_local_search(self, k: int, max_iters: int = 1000) -> Set[T]:
+    def greedy_local_search(self, k: int, max_iters: int = 0) -> Set[T]:
         """
         1) Greedy initialization: pick up to k elements with largest marginal gains.
         2) Local search: while possible, swap one selected element with one unselected
@@ -172,7 +176,7 @@ class BlackBoxMaximizer(_Maximizer):
         # --- Greedy initialization ---
         S: Set[T] = set()
         S_val = self.F(S)
-        for i in range(min(k, len(self.X))):
+        for i in range(k): #for i in range(min(k, len(self.X))):
             rprint('Iteration: {}'.format(i))
             rprint('Objective value: {} \n'.format(S_val))
             best_e, best_gain = None, -float('inf')
@@ -182,7 +186,9 @@ class BlackBoxMaximizer(_Maximizer):
                 gain = self.F(S | {e}) - S_val
                 if gain > best_gain:
                     best_gain, best_e = gain, e
-            if best_e is None or best_gain <= 0:
+            #if best_e is None or best_gain <= 0:
+            #    break
+            if best_e is None:
                 break
             S.add(best_e)
             S_val += best_gain
@@ -205,7 +211,6 @@ class BlackBoxMaximizer(_Maximizer):
                 if improved:
                     break
             iters += 1
-
         return S
 
 
