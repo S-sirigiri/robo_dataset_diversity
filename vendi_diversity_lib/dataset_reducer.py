@@ -162,7 +162,7 @@ def main():
 
     N = data.shape[0]
     # Selection
-    rprint(f"[red]\nSelecting maximized subset of size [/red] {args.k}\n")
+    rprint(f"[red]\nSelecting diversity maximized subset of size [/red] {args.k}\n")
     if args.maximizer == 'submodular':
         maximizer = SubmodularMaximizer(metric, data)
         if args.stochastic_greedy:
