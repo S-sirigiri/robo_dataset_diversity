@@ -49,7 +49,9 @@ class ImageEmbedder:
         """
         # Ensure list of images
         if isinstance(images, np.ndarray):
-            images = [images]
+            #images = [images]
+            images = list(images)
+            #raise ValueError("Provided images must be a numpy array")
         total = len(images)
 
         # Determine batch size
