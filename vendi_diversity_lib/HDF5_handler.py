@@ -47,11 +47,13 @@ class HDF5DatasetReducer:
                 # Flatten all obs fields, embedding images when encountered
                 obs_grp = grp['obs']
                 obs_list = []
+                print_flag = True
                 for k in sorted(obs_grp.keys()):
                     data = obs_grp[k][()]
                     # Embed uint8 image sequences
                     if data.dtype == np.uint8 and data.ndim == 4:
-                        rprint(f"Computing embedding for [green]{demo_id}[/green]...")
+                        if print_flag: rprint(f"Computing embedding for [green]{demo_id}[/green]...")
+                        print_flag = False
                         emb = self.embedder.embed(data)          # (T, D_img)
                         obs_list.append(emb.numpy())
                     else:

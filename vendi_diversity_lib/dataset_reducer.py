@@ -89,7 +89,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    rprint("[red]\nLoading the dataset\n\n[/red]")
+    rprint("[red]Loading the dataset\n[/red]")
     reducer = HDF5DatasetReducer(args.input, args.embedding)
     data = reducer.get_demos()
 
@@ -162,7 +162,7 @@ def main():
 
     N = data.shape[0]
     # Selection
-    rprint(f"[red]\n\nSelecting maximized subset of size [/red] {args.k}\n")
+    rprint(f"[red]\nSelecting maximized subset of size [/red] {args.k}\n")
     if args.maximizer == 'submodular':
         maximizer = SubmodularMaximizer(metric, data)
         if args.stochastic_greedy:
