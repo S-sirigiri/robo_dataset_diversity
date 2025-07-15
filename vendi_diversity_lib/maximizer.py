@@ -278,3 +278,92 @@ class BlackBoxMaximizer(_Maximizer):
             p = smoothing * p + (1 - smoothing) * new_p
 
         return best_S
+
+
+class DeterminantalPointProcessesSampling:
+    """
+    Sample a diverse subset of fixed size k via k-DPP.
+
+    API:
+      sampler = DeterminantalPointProcessesSampling(kernel, data)
+      S = sampler.sample(k)
+      # S is a set of indices of length k
+    """
+
+    def __init__(self, kernel: callable, data: np.ndarray):
+        """
+        Parameters
+        ----------
+        kernel : callable
+            A kernel function with signature kernel(X, Y=None, diag=False),
+            returning an (N,N) array when called as kernel(X, X).
+        data : np.ndarray, shape (N, ...)
+            The items over which to sample.
+        """
+        self.data = data
+        # Compute the L-ensemble kernel matrix
+        self.L = kernel(data, data)
+        # Eigendecomposition of L (symmetric)
+        self.pi, self.V = np.linalg.eigh(self.L)
+
+    def sample(self, k: int) -> set:
+        """
+        Draw a random subset of size k using the k-DPP algorithm.
+
+        Returns
+        -------
+        S : set of int
+            Indices of the selected subset of size k.
+        """
+        N = len(self.pi)
+        # STEP 1: Compute elementary symmetric polynomials e[n, l]
+        e = np.zeros((N+1, k+1))
+        e[:, 0] = 1.0
+        for l in range(1, k+1):
+            for n in range(1, N+1):
+                e[n, l] = e[n-1, l] + self.pi[n-1] * e[n-1, l-1]
+
+        # STEP 2: Sample eigenvector indices J (size k)
+        J = []
+        rem = k
+        for n in range(N, 0, -1):
+            if rem == 0:
+                break
+            # Force-pick if the remaining slots equal remaining eigenvectors
+            if rem == n:
+                J.extend(range(n-1, -1, -1)[:rem])
+                break
+            prob = (self.pi[n-1] * e[n-1, rem-1]) / e[n, rem]
+            if np.random.rand() < prob:
+                J.append(n-1)
+                rem -= 1
+
+        # Ensure exactly k selected
+        if len(J) != k:
+            raise ValueError(f"Expected to select {k} eigenvectors, but got {len(J)}")
+
+        # STEP 3: Sample actual items via the selected eigenvectors
+        V_sub = self.V[:, J].copy()  # shape (N, k)
+        S = []
+        tol = 1e-12
+        for _ in range(k):
+            # 3a) Compute marginal probabilities
+            probs = np.sum(V_sub**2, axis=1)
+            probs /= probs.sum()
+            i = np.random.choice(N, p=probs)
+            S.append(i)
+            # 3b) Zero out chosen row
+            V_sub[i, :] = 0.0
+            # 3c) Remove nearly zero columns
+            col_norms = np.linalg.norm(V_sub, axis=0)
+            keep = col_norms > tol
+            V_sub = V_sub[:, keep]
+            if V_sub.size == 0:
+                break
+            # 3d) Orthonormalize columns via QR
+            V_sub, _ = np.linalg.qr(V_sub, mode='reduced')
+
+        if len(S) != k:
+            raise RuntimeError(f"k-DPP sampling returned {len(S)} items, expected {k}")
+
+        return set(S)

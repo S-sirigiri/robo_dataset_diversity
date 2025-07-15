@@ -4,6 +4,12 @@ import os
 from rich import print as rprint
 
 import numpy as np
+from sklearn.preprocessing import (
+    normalize,
+    MinMaxScaler,
+    StandardScaler,
+    RobustScaler
+)
 
 from embeddings import ImageEmbedder
 
@@ -59,11 +65,14 @@ class HDF5DatasetReducer:
                             if print_flag: rprint(f"Computing embedding for [green]{demo_id}[/green]...")
                             print_flag = False
                             emb = self.embedder.embed(data)          # (T, D_img)
-                            obs_list.append(emb.numpy())
+                            emb = emb.numpy()
+                            emb = MinMaxScaler().fit_transform(emb)
+                            obs_list.append(emb)
                     else:
                         arr = data
                         if arr.ndim == 1:
                             arr = arr.reshape(-1, 1)
+                        arr = MinMaxScaler().fit_transform(arr)
                         obs_list.append(arr)
                 obs = np.concatenate(obs_list, axis=1)
 
@@ -75,18 +84,28 @@ class HDF5DatasetReducer:
                     if data.dtype == np.uint8 and data.ndim == 4:
                         if self.embedder is not None:
                             emb = self.embedder.embed(data)
-                            nxt_list.append(emb.numpy())
+                            emb = emb.numpy()
+                            emb = MinMaxScaler().fit_transform(emb)
+                            nxt_list.append(emb)
                     else:
                         arr = data
                         if arr.ndim == 1:
                             arr = arr.reshape(-1, 1)
+                        arr = MinMaxScaler().fit_transform(arr)
                         nxt_list.append(arr)
                 next_obs = np.concatenate(nxt_list, axis=1)
 
                 actions = grp['actions'][()]
+                actions = MinMaxScaler().fit_transform(actions)
+
                 dones   = grp['dones'][()].reshape(-1, 1)
+                dones = MinMaxScaler().fit_transform(dones)
+
                 rewards = grp['rewards'][()].reshape(-1, 1)
+                rewards = MinMaxScaler().fit_transform(rewards)
+
                 states  = grp['states'][()]
+                states = MinMaxScaler().fit_transform(states)
 
                 # Concat into shape (T, d)
                 fields = [obs, next_obs, actions, dones, rewards, states]

@@ -8,6 +8,7 @@ import numpy as np
 from maximizer import BlackBoxMaximizer
 from maximizer import SubmodularMaximizer
 from maximizer import NonMonotoneSubmodularMaximizer
+from maximizer import DeterminantalPointProcessesSampling
 
 from diversity_metrics import ShannonEntropy
 from diversity_metrics import VonNeumannEntropy
@@ -54,7 +55,7 @@ def parse_args():
                         help='Entropy type for VendiScore')
 
     # Maximizer options
-    parser.add_argument('--maximizer', choices=['submodular', 'nonmonotone', 'blackbox', 'random', 'arrange'],
+    parser.add_argument('--maximizer', choices=['submodular', 'nonmonotone', 'blackbox', 'DDP' , 'random', 'arrange'],
                         help='Selection strategy')
     parser.add_argument('--stochastic-greedy', action='store_true', help='Use stochastic greedy for submodular maximizer')
     parser.add_argument('--cross-entropy', action='store_true', help='Use cross-entropy for blackbox maximizer')
@@ -187,8 +188,11 @@ def main():
             )
         else:
             top_idxes = maximizer.greedy_local_search(k=args.k, max_iters=args.max_iter)
+    elif args.maximizer == 'DDP':
+        maximizer = DeterminantalPointProcessesSampling(km, data)
+        top_idxes = maximizer.sample(args.k)
     elif args.maximizer == 'random':
-        seed = 12345
+        seed = 1
         np.random.seed(seed)
         top_idxes = np.random.choice(N, size=args.k, replace=False).tolist()
     elif args.maximizer == 'arrange':
