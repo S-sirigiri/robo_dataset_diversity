@@ -55,7 +55,7 @@ def parse_args():
                         help='Entropy type for VendiScore')
 
     # Maximizer options
-    parser.add_argument('--maximizer', choices=['submodular', 'nonmonotone', 'blackbox', 'DDP' , 'random', 'arrange'],
+    parser.add_argument('--maximizer', choices=['submodular', 'nonmonotone', 'blackbox', 'DPP' , 'random', 'arrange'],
                         help='Selection strategy')
     parser.add_argument('--stochastic-greedy', action='store_true', help='Use stochastic greedy for submodular maximizer')
     parser.add_argument('--cross-entropy', action='store_true', help='Use cross-entropy for blackbox maximizer')
@@ -188,7 +188,7 @@ def main():
             )
         else:
             top_idxes = maximizer.greedy_local_search(k=args.k, max_iters=args.max_iter)
-    elif args.maximizer == 'DDP':
+    elif args.maximizer == 'DPP':
         maximizer = DeterminantalPointProcessesSampling(km, data)
         top_idxes = maximizer.sample(args.k)
     elif args.maximizer == 'random':
