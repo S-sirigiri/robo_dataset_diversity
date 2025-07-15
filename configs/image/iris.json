@@ -36,8 +36,8 @@
         }
     },
     "train": {
-        "data": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/datasets/can/ph/image_v15.hdf5",
-        "output_dir": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/trained_models/init_tests_image/iris/can/ph/image/full_dataset/trained_models",
+        "data": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/datasets/lift/ph/image_v15.hdf5",
+        "output_dir": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/trained_models/init_tests_image/iris/lift/ph/image/full_dataset/trained_models",
         "num_data_workers": 2,
         "hdf5_cache_mode": "low_dim",
         "hdf5_use_swmr": true,
@@ -326,7 +326,10 @@
                             "robot0_gripper_qpos",
                             "object"
                         ],
-                        "rgb": [],
+                        "rgb": [
+                            "agentview_image",
+                            "robot0_eye_in_hand_image"
+                        ],
                         "depth": [],
                         "scan": []
                     }
