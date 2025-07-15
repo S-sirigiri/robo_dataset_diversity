@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="robomimic_venv" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="robomimic_venv" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="robo_dataset_diversity_venv" project-jdk-type="Python SDK" />
 </project>

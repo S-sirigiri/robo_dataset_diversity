@@ -38,7 +38,7 @@
         "ckpt_path": null
     },
     "train": {
-        "data": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/datasets/lift/ph/low_dim.hdf5",
+        "data": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/datasets/lift/ph/low_dim_v15.hdf5",
         "output_dir": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/trained_models/init_tests_low_dim/diffusion_policy/lift/ph/low_dim/full_dataset/trained_models",
         "normalize_weights_by_ds_size": false,
         "num_data_workers": 0,
@@ -46,8 +46,8 @@
         "hdf5_use_swmr": true,
         "hdf5_load_next_obs": false,
         "hdf5_normalize_obs": false,
-        "hdf5_filter_key": null,
-        "hdf5_validation_filter_key": null,
+        "hdf5_filter_key": "train",
+        "hdf5_validation_filter_key": "valid",
         "seq_length": 16,
         "pad_seq_length": true,
         "frame_stack": 2,
