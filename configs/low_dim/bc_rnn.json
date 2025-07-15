@@ -36,8 +36,8 @@
         }
     },
     "train": {
-        "data": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/datasets/lift/ph/low_dim_v15_test.hdf5",
-        "output_dir": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/trained_models/power_laws/bc_rnn/lift/ph/low_dim/test/trained_models",
+        "data": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/datasets/lift/ph/low_dim_v15.hdf5",
+        "output_dir": "/home/vardhan/mnt/Artemis/Projects/robo_dataset_diversity/trained_models/test/power_laws/bc_rnn/lift/ph/low_dim/test/trained_models",
         "num_data_workers": 0,
         "hdf5_cache_mode": "all",
         "hdf5_use_swmr": true,

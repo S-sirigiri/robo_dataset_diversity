@@ -13,6 +13,12 @@ from sklearn.preprocessing import (
 
 from embeddings import ImageEmbedder
 
+keys = ["robot0_eef_pos",
+        "robot0_eef_quat",
+        "robot0_gripper_qpos",
+        "agentview_image",
+        "robot0_eye_in_hand_image"
+    ]
 
 class HDF5DatasetReducer:
     def __init__(self, input_path: str, embedding: str = "clip"):
@@ -58,6 +64,8 @@ class HDF5DatasetReducer:
                 obs_list = []
                 print_flag = True
                 for k in sorted(obs_grp.keys()):
+                    if k not in keys:
+                        continue
                     data = obs_grp[k][()]
                     # Embed uint8 image sequences
                     if data.dtype == np.uint8 and data.ndim == 4:
@@ -80,6 +88,8 @@ class HDF5DatasetReducer:
                 nxt_grp = grp['next_obs']
                 nxt_list = []
                 for k in sorted(nxt_grp.keys()):
+                    if k not in keys:
+                        continue
                     data = nxt_grp[k][()]
                     if data.dtype == np.uint8 and data.ndim == 4:
                         if self.embedder is not None:
