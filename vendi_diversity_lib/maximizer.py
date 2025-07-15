@@ -179,7 +179,6 @@ class BlackBoxMaximizer(_Maximizer):
         for i in range(k): #for i in range(min(k, len(self.X))):
             rprint('Iteration: {}'.format(i))
             rprint('Objective value: {} \n'.format(S_val))
-            input('Press ENTER to continue...')
             best_e, best_gain = None, -float('inf')
             for e in self.X:
                 if e in S:

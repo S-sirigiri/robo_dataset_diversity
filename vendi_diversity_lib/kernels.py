@@ -618,7 +618,4 @@ class KernelMatrix:
 
         # Convert result back to NumPy
         K = cp.asnumpy(K_cu)
-        print(K)
-        det = np.linalg.det(K)
-        print(det)
         return K
