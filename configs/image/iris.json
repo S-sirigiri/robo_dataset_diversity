@@ -1,7 +1,7 @@
 {
     "algo_name": "iris",
     "experiment": {
-        "name": "core_iris_can_ph_image",
+        "name": "iris_ph",
         "validate": true,
         "logging": {
             "terminal_output_to_txt": true,
@@ -18,7 +18,7 @@
             "on_best_rollout_return": false,
             "on_best_rollout_success_rate": true
         },
-        "epoch_every_n_steps": 500,
+        "epoch_every_n_steps": 5,
         "validation_epoch_every_n_steps": 50,
         "env": null,
         "additional_envs": null,
@@ -30,7 +30,7 @@
             "enabled": true,
             "n": 50,
             "horizon": 400,
-            "rate": 20,
+            "rate": 1,
             "warmstart": 0,
             "terminate_on_success": true
         }
@@ -56,8 +56,8 @@
         ],
         "goal_mode": null,
         "cuda": true,
-        "batch_size": 100,
-        "num_epochs": 2000,
+        "batch_size": 16,
+        "num_epochs": 600,
         "seed": 1
     },
     "algo": {
@@ -76,7 +76,7 @@
                 "optim_params": {
                     "goal_network": {
                         "learning_rate": {
-                            "initial": 0.001,
+                            "initial": 0.0001,
                             "decay_factor": 0.1,
                             "epoch_schedule": []
                         },
@@ -94,19 +94,19 @@
                 },
                 "vae": {
                     "enabled": true,
-                    "latent_dim": 14,
+                    "latent_dim": 16,
                     "latent_clip": null,
-                    "kl_weight": 0.0005,
+                    "kl_weight": 1.0,
                     "decoder": {
                         "is_conditioned": true,
                         "reconstruction_sum_across_elements": false
                     },
                     "prior": {
-                        "learn": true,
-                        "is_conditioned": true,
-                        "use_gmm": true,
+                        "learn": false,
+                        "is_conditioned": false,
+                        "use_gmm": false,
                         "gmm_num_modes": 10,
-                        "gmm_learn_weights": true,
+                        "gmm_learn_weights": false,
                         "use_categorical": false,
                         "categorical_dim": 10,
                         "categorical_gumbel_softmax_hard": false,
@@ -115,16 +115,16 @@
                         "categorical_min_temp": 0.3
                     },
                     "encoder_layer_dims": [
-                        1024,
-                        1024
+                        300,
+                        400
                     ],
                     "decoder_layer_dims": [
-                        1024,
-                        1024
+                        300,
+                        400
                     ],
                     "prior_layer_dims": [
-                        1024,
-                        1024
+                        300,
+                        400
                     ]
                 }
             },
@@ -144,7 +144,7 @@
                     },
                     "action_sampler": {
                         "learning_rate": {
-                            "initial": 0.0001,
+                            "initial": 0.001,
                             "decay_factor": 0.1,
                             "epoch_schedule": []
                         },
@@ -169,7 +169,7 @@
                 },
                 "discount": 0.99,
                 "n_step": 1,
-                "target_tau": 0.0005,
+                "target_tau": 0.005,
                 "infinite_horizon": false,
                 "critic": {
                     "use_huber": false,
@@ -192,8 +192,8 @@
                 },
                 "action_sampler": {
                     "actor_layer_dims": [
-                        300,
-                        400
+                        1024,
+                        1024
                     ],
                     "gmm": {
                         "enabled": false,
@@ -204,9 +204,9 @@
                     },
                     "vae": {
                         "enabled": true,
-                        "latent_dim": 16,
+                        "latent_dim": 14,
                         "latent_clip": null,
-                        "kl_weight": 0.5,
+                        "kl_weight": 1.0,
                         "decoder": {
                             "is_conditioned": true,
                             "reconstruction_sum_across_elements": false
@@ -255,7 +255,7 @@
                 "policy": {
                     "optimizer_type": "adam",
                     "learning_rate": {
-                        "initial": 0.001,
+                        "initial": 0.0001,
                         "decay_factor": 0.1,
                         "epoch_schedule": [],
                         "scheduler_type": "multistep"
@@ -270,7 +270,10 @@
                 "l1_weight": 0.0,
                 "cos_weight": 0.0
             },
-            "actor_layer_dims": [],
+            "actor_layer_dims": [
+                1024,
+                1024
+            ],
             "rnn": {
                 "enabled": true,
                 "horizon": 10,
@@ -308,7 +311,10 @@
                             "robot0_eef_quat",
                             "robot0_gripper_qpos"
                         ],
-                        "rgb": ["agentview_image","robot0_eye_in_hand_image"],
+                        "rgb": [
+                            "agentview_image",
+                            "robot0_eye_in_hand_image"
+                        ],
                         "depth": [],
                         "scan": []
                     },
@@ -324,7 +330,10 @@
                             "robot0_eef_quat",
                             "robot0_gripper_qpos"
                         ],
-                        "rgb": [],
+                        "rgb": [
+                            "agentview_image",
+                            "robot0_eye_in_hand_image"
+                        ],
                         "depth": [],
                         "scan": []
                     }
@@ -338,9 +347,22 @@
                     },
                     "rgb": {
                         "core_class": "VisualCore",
-                        "core_kwargs": {},
-                        "obs_randomizer_class": null,
-                        "obs_randomizer_kwargs": {}
+                        "core_kwargs": {
+                            "feature_dimension": 64,
+                            "backbone_class": "ResNet18Conv",
+                            "backbone_kwargs": {
+                                "pretrained": false,
+                                "input_coord_conv": false
+                            },
+                            "pool_class": "SpatialSoftmax",
+                            "pool_kwargs": {
+                                "num_kp": 32,
+                                "learnable_temperature": false,
+                                "temperature": 1.0,
+                                "noise_std": 0.0
+                            }
+                        },
+                        "obs_randomizer_class": null
                     },
                     "depth": {
                         "core_class": "VisualCore",
@@ -364,7 +386,10 @@
                             "robot0_eef_quat",
                             "robot0_gripper_qpos"
                         ],
-                        "rgb": ["agentview_image","robot0_eye_in_hand_image"],
+                        "rgb": [
+                            "agentview_image",
+                            "robot0_eye_in_hand_image"
+                        ],
                         "depth": [],
                         "scan": []
                     },
@@ -411,7 +436,10 @@
                         "robot0_eef_quat",
                         "robot0_gripper_qpos"
                     ],
-                    "rgb": ["agentview_image","robot0_eye_in_hand_image"],
+                    "rgb": [
+                        "agentview_image",
+                        "robot0_eye_in_hand_image"
+                    ],
                     "depth": [],
                     "scan": []
                 },

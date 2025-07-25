@@ -303,6 +303,7 @@ class DeterminantalPointProcessesSampling:
         self.data = data
         # Compute the L-ensemble kernel matrix
         self.L = kernel(data, data)
+        self.L = self.L / 1e-20
         # Eigendecomposition of L (symmetric)
         self.pi, self.V = np.linalg.eigh(self.L)
 

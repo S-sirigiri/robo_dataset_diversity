@@ -79,7 +79,7 @@ def parse_args():
         parser.error('Reduction requires --maximizer')
     if args.k is None:
         parser.error('Reduction requires --k')
-    if args.maximizer != 'random' and args.metric is None:
+    if args.maximizer not in ['random', 'DPP'] and args.metric is None:
         parser.error('Reduction requires --metric unless --maximizer random')
     if args.stochastic_greedy and args.maximizer != 'submodular':
         parser.error('--stochastic-greedy requires --maximizer submodular')
